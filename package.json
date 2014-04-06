@@ -1,0 +1,11 @@
+{
+  "name": "dynamic-api-nodejs",
+  "version": "0.0.1",
+  "description": "Prototype for handling RESTful CRUD with dynamic URIs using nodejs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Evan W. Isnor (ewisnor@gmail.com)",
+  "license": "MIT"
+}
