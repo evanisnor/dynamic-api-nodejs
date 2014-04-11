@@ -1,6 +1,10 @@
 
 exports.view = function(path, query, callback) {
-    console.log('VIEW: ' + JSON.stringify(path) + '\n' + query);
+    console.log('VIEW: ' + JSON.stringify(path));
+    if (query) {
+        console.log('\t' + query);
+    }
+
     get_collection(path.customer, path.path, path.method, function(collection, resource) {
         callback(collection, true);
     },
@@ -22,14 +26,61 @@ exports.create = function(path, body, callback) {
 }
 
 exports.update = function(path, body, callback) {
-    console.log('UPDATE: ' + JSON.stringify(path) + '\n' + body);
-    
-    callback(true);
+    console.log('UPDATE: ' + JSON.stringify(path) + '\n' + JSON.stringify(body));
+    get_collection(path.customer, path.path, path.method, function(collection, resource, values_from_path) {
+        
+        for (var i in collection) {
+            var item = collection[i];
+            var isCorrectItem = true;
+            for (var key in values_from_path) {
+                var pathval = values_from_path[key];
+                if (item[key] !== pathval) {
+                    isCorrectItem = false;
+                }
+            }
+            if (isCorrectItem) {
+                for (var key in body) {
+                    item[key] = body[key];
+                }
+                collection[i] = item;
+                callback(true);
+                return;
+            }
+        }
+        callback(false);
+    },
+    function() {
+        callback(false);
+    });
 }
 
 exports.delete = function(path, query, callback) {
-    console.log('DELETE: ' + JSON.stringify(path) + '\n' + query);
-    callback(true);
+    console.log('DELETE: ' + JSON.stringify(path));
+    if (query) {
+        console.log('\t' + query);
+    }
+    get_collection(path.customer, path.path, path.method, function(collection, resource, values_from_path) {
+        
+        for (var i in collection) {
+            var item = collection[i];
+            var isCorrectItem = true;
+            for (var key in values_from_path) {
+                var pathval = values_from_path[key];
+                if (item[key] !== pathval) {
+                    isCorrectItem = false;
+                }
+            }
+            if (isCorrectItem) {
+                collection.splice(i, 1);
+                callback(true);
+                return;
+            }
+        }
+        callback(false);
+    },
+    function() {
+        callback(false);
+    });
 }
 
 var get_collection = function(customer_id, path, method, successCallback, notFoundCallback) {
@@ -38,16 +89,34 @@ var get_collection = function(customer_id, path, method, successCallback, notFou
             var resources = customers[customer_id]['resources'];
             for (var r_id in resources) {
                 var r = resources[r_id];
-                if (path.match(r['uri']) && method == r['method']) {
+                var groups = path.match(r['uri']);
+                if (groups && method == r['method']) {
                     var c = r['data_model']['collection'];
-                    successCallback(customer_data[c], r);
-                    return
+                    var g = r['data_model']['groups'];
+                    if (Object.keys(g).length > 0) {
+                        var values_from_path = {};
+                        for (var g_index in groups) {
+                            var key = g[g_index];
+                            var val = groups[g_index];
+                            if (key) {
+                                values_from_path[key] = val;
+                            }
+                        }
+                        successCallback(customer_data[c], r, values_from_path);
+                    }
+                    else {
+                        successCallback(customer_data[c], r);
+                    }
+                    return;
                 }
             }
         }
+        console.log('get_collection - not found')
         notFoundCallback();
     }
 };
+
+
 
 //####################
 //# Fake database.
@@ -78,7 +147,7 @@ customers['megapong']['resources'] = {
         }
     },
     2 : {
-        'uri' : 'highscore\/(\d+)',
+        'uri' : 'highscore\/(\\d+)',
         'method' : 'PUT',
         'data_model' : {
             'collection' : '09723603846',
@@ -89,7 +158,7 @@ customers['megapong']['resources'] = {
         }
     },
     3 : {
-        'uri' : 'highscore\/(\d+)',
+        'uri' : 'highscore\/(\\d+)',
         'method' : 'DELETE',
         'data_model' : {
             'collection' : '09723603846',

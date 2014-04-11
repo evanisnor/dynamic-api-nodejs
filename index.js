@@ -11,6 +11,12 @@ var handleRequest = function(request, response) {
     var path = parsePath(url.pathname, method);
     var query = url.query;
 
+    if (!path) {
+        response.writeHead(404);
+        response.end();
+        return;
+    }
+
     switch (method) {
         case 'GET':
             datalayer.view(path, query, function(content, success) {
@@ -69,11 +75,13 @@ var handleRequest = function(request, response) {
 
 var parsePath = function(path, method) {
     var group = path.match(/^\/~([a-zA-Z0-9]+)\/([a-zA-Z0-9\/]+)\/?/);
-    return {
-        'customer' : group[1],
-        'path' : group[2],
-        'method' : method
-    };
+    if (group && group.length > 1 && method) {
+        return {
+            'customer' : group[1],
+            'path' : group[2],
+            'method' : method
+        };
+    }
 };
 
 http.createServer(handleRequest).listen(PORT, '127.0.0.1');
